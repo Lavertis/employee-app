@@ -14,6 +14,7 @@ interface EmployeeListProps {
 }
 
 const EmployeeList: React.FC<EmployeeListProps> = ({ itemsPerPage }) => {
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [employees, setEmployees] = useState<EmployeeListItem[]>([]);
 
@@ -25,9 +26,10 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ itemsPerPage }) => {
     const [showFormModal, setShowFormModal] = useState(false);
 
     const fetchEmployees = (page: number, pageSize: number) => {
+        setIsLoading(true);
         axiosInstance.get(`/employees?page=${page}&pageSize=${pageSize}`)
             .then(response => {
-                setEmployees(prevEmployees => prevEmployees.concat(response.data));
+                setEmployees([...employees, ...response.data]);
                 const paginationHeader = response.headers['x-pagination'];
                 if (paginationHeader) {
                     const paginationData = parsePaginationHeader(paginationHeader);
@@ -37,6 +39,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ itemsPerPage }) => {
             .catch(error => {
                 setError(error.response.data.error);
             })
+            .finally(() => setIsLoading(false));
     };
 
     useEffect(() => {
@@ -81,7 +84,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ itemsPerPage }) => {
         );
     }
 
-    if (!employees.length) {
+    if (!employees.length && !isLoading) {
         return (
             <Alert variant="info">No employees found</Alert>
         );
