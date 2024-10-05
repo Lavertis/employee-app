@@ -1,49 +1,58 @@
-import {useEffect, useState} from 'react';
-import {Table, Container, Spinner, Alert, Button, Pagination, FormControl} from 'react-bootstrap';
+import React, {useEffect, useState} from 'react';
 import axiosInstance from "../../api/axiosInstance.ts";
+import {Alert, Container, Spinner, Table} from "react-bootstrap";
+import SearchAddComponent from "../../components/SearchAddComponent.tsx";
+import EmployeeRow from "./components/EmployeeRow.tsx";
+import PaginationComponent from "../../components/PaginationComponent.tsx";
 import DeleteEmployeeModal from "./components/DeleteEmployeeModal.tsx";
-import {FaEdit, FaPlus, FaTrash} from "react-icons/fa";
 import EmployeeFormModal from "./components/employee-form/EmployeeFormModal.tsx";
 import {EmployeeListItem} from "../../types/employee.ts";
+import {parsePaginationHeader} from "../../utils/pagination-utils.ts";
 
 interface EmployeeListProps {
     itemsPerPage: number;
 }
 
-const EmployeeList = ({itemsPerPage}: EmployeeListProps) => {
+const EmployeeList: React.FC<EmployeeListProps> = ({ itemsPerPage }) => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const [employees, setEmployees] = useState<EmployeeListItem[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [showFormModal, setShowFormModal] = useState(false);
-    const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
-    const [editingEmployeeId, setEditingEmployeeId] = useState<number | null>(null);
+
     const [currentPage, setCurrentPage] = useState(1);
     const [totalRecords, setTotalRecords] = useState(0);
-    const [fullNameSearch, setFullNameSearch] = useState("");
 
-    const fetchEmployee = async (page: number, pageSize: number, fullNameSearch: string) => {
-        axiosInstance.get(`/employees?page=${page}&pageSize=${pageSize}&fullName=${fullNameSearch}`)
+    const [fullNameSearch, setFullNameSearch] = useState('');
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showFormModal, setShowFormModal] = useState(false);
+
+    const fetchEmployees = (page: number, pageSize: number, fullName: string) => {
+        setLoading(true);
+        axiosInstance.get(`/employees?page=${page}&pageSize=${pageSize}&fullName=${fullName}`)
             .then(response => {
                 setEmployees(response.data);
-                setTotalRecords(response.data.totalRecords);
+                const paginationHeader = response.headers['x-pagination'];
+                if (paginationHeader) {
+                    const paginationData = parsePaginationHeader(paginationHeader);
+                    console.log('paginationData:', paginationData);
+                    setTotalRecords(paginationData.totalCount);
+                }
                 setLoading(false);
             })
             .catch(error => {
-                    setError(error.error);
-                    setLoading(false);
-                }
-            );
+                setError(error.response.data.error);
+                setLoading(false);
+            });
     };
 
     useEffect(() => {
         setCurrentPage(1);
-        fetchEmployee(1, itemsPerPage, fullNameSearch);
+        fetchEmployees(1, itemsPerPage, fullNameSearch);
     }, [fullNameSearch, itemsPerPage]);
 
     useEffect(() => {
-        fetchEmployee(currentPage, itemsPerPage, fullNameSearch);
-    }, [currentPage, itemsPerPage]);
+        fetchEmployees(currentPage, itemsPerPage, fullNameSearch);
+    }, [currentPage]);
 
     const handleDeleteClick = (id: number) => {
         setSelectedEmployeeId(id);
@@ -51,92 +60,51 @@ const EmployeeList = ({itemsPerPage}: EmployeeListProps) => {
     };
 
     const handleEditClick = (employeeId: number) => {
-        setEditingEmployeeId(employeeId);
+        setSelectedEmployeeId(employeeId);
         setShowFormModal(true);
     };
 
     const handleAddClick = () => {
-        setEditingEmployeeId(null);
+        setSelectedEmployeeId(null);
         setShowFormModal(true);
     };
 
     const handleDelete = () => {
         setCurrentPage(1);
-        fetchEmployee(1, itemsPerPage, fullNameSearch);
+        fetchEmployees(1, itemsPerPage, fullNameSearch);
     };
 
     const handleSave = () => {
-        setEditingEmployeeId(null);
-        fetchEmployee(currentPage, itemsPerPage, fullNameSearch);
+        setSelectedEmployeeId(null);
+        fetchEmployees(currentPage, itemsPerPage, fullNameSearch);
     };
 
     const handlePageChange = (pageNumber: number) => {
         setCurrentPage(pageNumber);
     };
 
-    const handleNextPage = () => {
-        if (currentPage < Math.ceil(totalRecords / itemsPerPage)) {
-            setCurrentPage(currentPage + 1);
-        }
-    };
-
-    const handlePrevPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-        }
-    };
-
-    const renderPaginationItems = () => {
-        const totalPages = Math.ceil(totalRecords / itemsPerPage);
-        const items = [];
-        for (let number = 1; number <= totalPages; number++) {
-            items.push(
-                <Pagination.Item key={number} active={number === currentPage} onClick={() => handlePageChange(number)}>
-                    {number}
-                </Pagination.Item>
-            );
-        }
-        return items;
-    };
-
     if (loading) {
         return (
-            <Container className="text-center">
-                <div className="d-flex flex-column align-items-center">
-                    <Spinner animation="border" role="status" />
-                    <span className="mt-2">Loading...</span>
-                </div>
+            <Container className="d-flex flex-column align-items-center text-center">
+                <Spinner animation="border" role="status"/>
+                <span className="mt-2">Loading...</span>
             </Container>
         );
     }
 
     if (error) {
         return (
-            <Container>
-                <Alert variant="danger">
-                    {error}
-                </Alert>
-            </Container>
+            <Alert variant="danger">{error}</Alert>
         );
     }
 
     return (
         <Container>
-            <Container className="d-flex justify-content-between">
-                <h1>Employee list</h1>
-                <div className="d-flex align-items-center gap-2">
-                    <FormControl
-                        type="text"
-                        placeholder="Search by full name"
-                        value={fullNameSearch}
-                        onChange={(e) => setFullNameSearch(e.target.value)}
-                        className=""
-                    />
-                    <Button variant="primary" onClick={handleAddClick} className="d-flex align-items-center">
-                        <FaPlus className="me-1"/><span className="text-nowrap">Add Employee</span>
-                    </Button>
-                </div>
-            </Container>
+            <SearchAddComponent
+                fullNameSearch={fullNameSearch}
+                setFullNameSearch={setFullNameSearch}
+                handleAddClick={handleAddClick}
+            />
             <Table striped bordered hover>
                 <thead>
                 <tr>
@@ -144,34 +112,26 @@ const EmployeeList = ({itemsPerPage}: EmployeeListProps) => {
                     <th>Last name</th>
                     <th>Age</th>
                     <th>Sex</th>
+                    <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody>
                 {employees.map(employee => (
-                    <tr key={employee.id}>
-                        <td>{employee.firstName}</td>
-                        <td>{employee.lastName}</td>
-                        <td>{employee.age}</td>
-                        <td>{employee.sex}</td>
-                        <td>
-                            <Container className="d-flex gap-1 justify-content-center">
-                                <Button variant="primary" onClick={() => handleEditClick(employee.id)}>
-                                    <FaEdit className="mb-1"/>
-                                </Button>
-                                <Button variant="danger" onClick={() => handleDeleteClick(employee.id)}>
-                                    <FaTrash className="mb-1"/>
-                                </Button>
-                            </Container>
-                        </td>
-                    </tr>
+                    <EmployeeRow
+                        key={employee.id}
+                        employee={employee}
+                        handleEditClick={handleEditClick}
+                        handleDeleteClick={handleDeleteClick}
+                    />
                 ))}
                 </tbody>
             </Table>
-            <Pagination className="justify-content-center">
-                <Pagination.Prev onClick={handlePrevPage} disabled={currentPage === 1} />
-                {renderPaginationItems()}
-                <Pagination.Next onClick={handleNextPage} disabled={currentPage === Math.ceil(totalRecords / itemsPerPage) || totalRecords === 0} />
-            </Pagination>
+            <PaginationComponent
+                currentPage={currentPage}
+                totalRecords={totalRecords}
+                itemsPerPage={itemsPerPage}
+                handlePageChange={handlePageChange}
+            />
             <DeleteEmployeeModal
                 show={showDeleteModal}
                 handleClose={() => setShowDeleteModal(false)}
@@ -181,7 +141,7 @@ const EmployeeList = ({itemsPerPage}: EmployeeListProps) => {
             <EmployeeFormModal
                 show={showFormModal}
                 handleClose={() => setShowFormModal(false)}
-                employeeId={editingEmployeeId}
+                employeeId={selectedEmployeeId}
                 onSave={handleSave}
             />
         </Container>

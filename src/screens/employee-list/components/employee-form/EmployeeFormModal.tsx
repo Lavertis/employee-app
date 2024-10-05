@@ -7,13 +7,14 @@ import Select from "react-select";
 import {Sex} from "../../../../types/employee.ts";
 import {formatErrorsForFormik} from "../../../../utils/error-utils.ts";
 import {SelectOption} from "../../../../types/select.ts";
-import bookFormValidationSchema from "./employee-form-validation-schema.ts";
+import employeeFormValidationSchema from "./employee-form-validation-schema.ts";
+import axios from "axios";
 
 interface FormValues {
     firstName: string;
     lastName: string;
     age: number;
-    sex: SelectOption;
+    sex: SelectOption | null;
 }
 
 const initialValues = {
@@ -45,7 +46,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({show, handleClose,
     };
 
     const fetchEmployee = async (id: number) => {
-        axiosInstance.get(`/books/${id}`)
+        axiosInstance.get(`/employees/${id}`)
             .then(response => {
                 const employee = response.data;
                 setInitialFormValues({
@@ -78,59 +79,53 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({show, handleClose,
 
     useEffect(() => {
         if (initialFormValues) {
-            formik.setValues({
-                firstName: initialFormValues.firstName,
-                lastName: initialFormValues.lastName,
-                age: initialFormValues.age,
-                sex: initialFormValues.sex,
-            });
+            formik.setValues(initialFormValues);
         }
     }, [initialFormValues]);
 
-    const formik = useFormik({
-        initialValues: initialValues,
-        validationSchema: bookFormValidationSchema,
-        onSubmit: async (values) => {
+
+    const handleSubmit = async (values: FormValues) => {
+        try {
             if (employeeId && initialFormValues) {
-                const changedFields: Partial<FormValues> = Object.entries(values).reduce((acc, [key, value]) => {
-                    if (value !== initialFormValues[key as keyof FormValues]) {
-                        (acc as any)[key as keyof FormValues] = value;
-                    }
-                    return acc;
-                }, {} as Partial<FormValues>);
-                console.log('changedFields', changedFields);
+                const changedFields = getChangedFields(values, initialFormValues);
                 if (Object.keys(changedFields).length === 0) {
                     handleClose();
                     return;
                 }
-
-                axiosInstance.patch(`/employees/${employeeId}`, {
-                    firstName: changedFields.firstName,
-                    lastName: changedFields.lastName,
-                    age: changedFields.age,
+                await axiosInstance.patch(`/employees/${employeeId}`, {
+                    ...changedFields,
                     sexId: changedFields.sex?.value
-                }).then(() => {
-                    onSave();
-                    handleClose();
-                }).catch(error => {
-                    formik.setErrors(formatErrorsForFormik(error.response.data));
-                    console.error('Failed to save the book-list:', error);
                 });
             } else {
-                axiosInstance.post('/employees', {
-                    firstName: values.firstName,
-                    lastName: values.lastName,
-                    age: values.age,
+                await axiosInstance.post('/employees', {
+                    ...values,
                     sexId: values.sex?.value
-                }).then(() => {
-                    onSave();
-                    handleClose();
-                }).catch(error => {
-                    formik.setErrors(formatErrorsForFormik(error.response.data));
-                    console.error('Failed to save the book-list:', error);
-                })
+                });
+            }
+            onSave();
+            handleClose();
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                formik.setErrors(formatErrorsForFormik(error.response?.data));
+            } else {
+                console.error('Failed to save the employee:', error);
             }
         }
+    };
+
+    const getChangedFields = (values: FormValues, initialValues: FormValues) => {
+        return Object.entries(values).reduce((acc, [key, value]) => {
+            if (value !== initialValues[key as keyof FormValues]) {
+                (acc as any)[key as keyof FormValues] = value;
+            }
+            return acc;
+        }, {} as Partial<FormValues>);
+    };
+
+    const formik = useFormik({
+        initialValues,
+        validationSchema: employeeFormValidationSchema,
+        onSubmit: handleSubmit
     });
 
     return (
