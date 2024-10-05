@@ -98,6 +98,12 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ itemsPerPage }) => {
         );
     }
 
+    if (!employees.length) {
+        return (
+            <Alert variant="info">No employees found</Alert>
+        );
+    }
+
     return (
         <Container>
             <SearchAddComponent
@@ -108,8 +114,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ itemsPerPage }) => {
             <Table striped bordered hover>
                 <thead>
                 <tr>
-                    <th>First name</th>
-                    <th>Last name</th>
+                    <th>Full name</th>
                     <th>Age</th>
                     <th>Sex</th>
                     <th>Actions</th>

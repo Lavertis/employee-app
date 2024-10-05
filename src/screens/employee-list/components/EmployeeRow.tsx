@@ -17,9 +17,8 @@ interface EmployeeRowProps {
 const EmployeeRow: React.FC<EmployeeRowProps> = ({employee, handleEditClick, handleDeleteClick}) => {
     return (
         <tr>
-            <td>{employee.firstName}</td>
-            <td>{employee.lastName}</td>
-            <td>{employee.age}</td>
+            <td>{employee.firstName} {employee.lastName}</td>
+            <td>{employee.age} years</td>
             <td>{employee.sex}</td>
             <td>
                 <Container className="d-flex gap-1 justify-content-center">
