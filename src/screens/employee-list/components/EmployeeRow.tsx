@@ -1,6 +1,6 @@
 import React from 'react';
-import {Button, Container} from 'react-bootstrap';
-import {FaEdit, FaTrash} from 'react-icons/fa';
+import { Button, Card, Container } from 'react-bootstrap';
+import { FaEdit, FaTrash } from 'react-icons/fa';
 
 interface EmployeeRowProps {
     employee: {
@@ -14,23 +14,29 @@ interface EmployeeRowProps {
     handleDeleteClick: (id: number) => void;
 }
 
-const EmployeeRow: React.FC<EmployeeRowProps> = ({employee, handleEditClick, handleDeleteClick}) => {
+const EmployeeRow: React.FC<EmployeeRowProps> = ({ employee, handleEditClick, handleDeleteClick }) => {
     return (
-        <tr>
-            <td>{employee.firstName} {employee.lastName}</td>
-            <td>{employee.age} years</td>
-            <td>{employee.sex}</td>
-            <td>
-                <Container className="d-flex gap-1 justify-content-center">
-                    <Button variant="primary" onClick={() => handleEditClick(employee.id)}>
-                        <FaEdit className="mb-1"/>
-                    </Button>
-                    <Button variant="danger" onClick={() => handleDeleteClick(employee.id)}>
-                        <FaTrash className="mb-1"/>
-                    </Button>
+        <Card className="mb-3">
+            <Card.Body>
+                <Container className="d-flex justify-content-between align-items-start">
+                    <div>
+                        <Card.Title>{employee.firstName} {employee.lastName}</Card.Title>
+                        <Card.Text>
+                            Age: {employee.age} years<br />
+                            Sex: {employee.sex}
+                        </Card.Text>
+                    </div>
+                    <div className="d-flex gap-1">
+                        <Button variant="primary" onClick={() => handleEditClick(employee.id)}>
+                            <FaEdit className="mb-1" />
+                        </Button>
+                        <Button variant="danger" onClick={() => handleDeleteClick(employee.id)}>
+                            <FaTrash className="mb-1" />
+                        </Button>
+                    </div>
                 </Container>
-            </td>
-        </tr>
+            </Card.Body>
+        </Card>
     );
 };
 
