@@ -5,14 +5,15 @@ import {EmployeeListItem} from "../../../types/employee.ts";
 import {sexLabels} from "../../../constants/enum-labels.ts";
 
 interface EmployeeRowProps {
+    index: number;
     employee: EmployeeListItem;
     handleEditClick: (id: string) => void;
     handleCheckboxChange: (id: string, checked: boolean) => void;
 }
 
-const EmployeeRow: React.FC<EmployeeRowProps> = ({employee, handleEditClick, handleCheckboxChange}) => {
+const EmployeeRow: React.FC<EmployeeRowProps> = ({index, employee, handleEditClick, handleCheckboxChange}) => {
     return (
-        <Card className="mb-3">
+        <Card className={`mb-2 mx-3 ${index % 2 != 0 ? 'bg-light' : ''}`}>
             <Card.Body>
                 <Container className="d-flex justify-content-between align-items-start">
                     <div>

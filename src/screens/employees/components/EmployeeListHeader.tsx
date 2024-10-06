@@ -15,14 +15,19 @@ const EmployeeListHeader: React.FC<EmployeeListHeaderProps> = ({handleAddClick, 
     } = useSelector((state: RootState) => state.employees);
 
     return (
-        <Container className="d-flex justify-content-between mb-3">
-            <h1>Employee list</h1>
-            <div className="d-flex align-items-center">
-                <Button variant="primary" onClick={handleAddClick} className="d-flex align-items-center">
+        <Container className="d-flex flex-column flex-md-row justify-content-between mb-3">
+            <h1 className="text-center">Employee list</h1>
+            <div className="d-flex flex-column flex-sm-row align-items-center justify-content-center mt-2 mt-md-0">
+                <Button variant="primary" onClick={handleAddClick}
+                        className="d-flex align-items-center mb-2 mb-sm-0 me-sm-2">
                     <FaPlus className="me-1"/><span className="text-nowrap">Add Employee</span>
                 </Button>
-                {selectedEmployeeIds && <Button variant="danger" onClick={() => setShowDeleteModal(true)}
-                         className="d-flex align-items-center ms-2" disabled={!selectedEmployeeIds.length}>
+                {selectedEmployeeIds && <Button
+                    variant="danger"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="d-flex align-items-center"
+                    disabled={!selectedEmployeeIds.length}
+                >
                     <FaTrash className="me-1"/><span className="text-nowrap">Delete Selected</span>
                 </Button>}
             </div>

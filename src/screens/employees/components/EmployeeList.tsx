@@ -1,5 +1,5 @@
 import React from 'react';
-import {Alert, Container, Spinner} from "react-bootstrap";
+import {Container, Spinner} from "react-bootstrap";
 import EmployeeRow from "./EmployeeRow.tsx";
 import InfiniteScroll from "react-infinite-scroll-component";
 import {useDispatch, useSelector} from "react-redux";
@@ -29,7 +29,6 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ setShowFormModal }) => {
 
     const handleCheckboxChange = (id: string, checked: boolean) => {
         dispatch(setSelectedEmployeeIds(checked ? [...selectedEmployeeIds, id] : selectedEmployeeIds.filter(employeeId => employeeId !== id)));
-        console.log(selectedEmployeeIds);
     };
 
     return (
@@ -39,11 +38,12 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ setShowFormModal }) => {
                 next={() => dispatch(fetchNextEmployees())}
                 hasMore={!totalRecords || employees.length < totalRecords}
                 loader={<Spinner animation="border" role="status"/>}
-                height={'calc(100vh - 300px)'}
-                endMessage={<Alert variant="info">No more employees</Alert>}
+                height={'80vh'}
+                endMessage={<div className="text-center">No more employees</div>}
             >
-                {employees.map(employee => (
+                {employees.map((employee, index) => (
                     <EmployeeRow
+                        index={index}
                         key={employee.id}
                         employee={employee}
                         handleEditClick={handleEditClick}
