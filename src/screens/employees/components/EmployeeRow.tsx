@@ -15,24 +15,20 @@ const EmployeeRow: React.FC<EmployeeRowProps> = ({index, employee, handleEditCli
     return (
         <Card className={`mb-2 mx-3 ${index % 2 != 0 ? 'bg-light' : ''}`}>
             <Card.Body>
-                <Container className="d-flex justify-content-between align-items-start">
-                    <div>
-                        <Card.Title>{employee.firstName} {employee.lastName}</Card.Title>
+                <Container className="d-flex justify-content-between align-items-center">
+                    <div className="d-flex align-items-center">
+                        <Card.Title className="mb-1 me-2">{employee.firstName} {employee.lastName}</Card.Title>
                         <Card.Text>
-                            Age: {employee.age} years<br/>
-                            Sex: {sexLabels[
-                            employee.sex as keyof typeof sexLabels
-                            ]}
+                            {employee.age} years, {sexLabels[employee.sex as keyof typeof sexLabels]}
                         </Card.Text>
                     </div>
-                    <div className="d-flex gap-1 flex-column">
+                    <div className="d-flex gap-2 align-items-center">
                         <Button variant="primary" onClick={() => handleEditClick(employee.id)}>
-                            <FaEdit className="mb-1"/>
+                            <FaEdit />
                         </Button>
                         <Form.Check
                             type="checkbox"
                             onChange={(e) => handleCheckboxChange(employee.id, e.target.checked)}
-                            className="mx-auto"
                         />
                     </div>
                 </Container>
