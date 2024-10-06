@@ -1,6 +1,5 @@
 import React from 'react';
-import {Container, Spinner} from "react-bootstrap";
-import EmployeeRow from "./EmployeeRow.tsx";
+import {Container, Spinner, Table} from "react-bootstrap";
 import InfiniteScroll from "react-infinite-scroll-component";
 import {useDispatch, useSelector} from "react-redux";
 import {AppDispatch, RootState} from "../../../store";
@@ -9,6 +8,7 @@ import {
     fetchNextEmployees,
     setSelectedEmployeeIds
 } from "../../../store/employeesSlice.ts";
+import EmployeeTableRow from "./EmployeeTableRow.tsx";
 
 interface EmployeeListProps {
     setShowFormModal: (show: boolean) => void;
@@ -41,15 +41,27 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ setShowFormModal }) => {
                 height={'80vh'}
                 endMessage={<div className="text-center">No more employees</div>}
             >
-                {employees.map((employee, index) => (
-                    <EmployeeRow
-                        index={index}
-                        key={employee.id}
-                        employee={employee}
-                        handleEditClick={handleEditClick}
-                        handleCheckboxChange={handleCheckboxChange}
-                    />
-                ))}
+                <Table striped bordered>
+                    <thead>
+                    <tr>
+                        <th></th>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Sex</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {employees.map(employee => (
+                        <EmployeeTableRow
+                            key={employee.id}
+                            employee={employee}
+                            handleEditClick={handleEditClick}
+                            handleCheckboxChange={handleCheckboxChange}
+                        />
+                    ))}
+                    </tbody>
+                </Table>
             </InfiniteScroll>
         </Container>
     );

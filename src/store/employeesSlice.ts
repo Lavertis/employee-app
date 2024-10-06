@@ -27,7 +27,7 @@ const initialState: EmployeesState = {
     employees: [],
     totalRecords: null,
     currentPage: 0,
-    pageSize: 10,
+    pageSize: 15,
     selectedEmployeeIds: [],
     editEmployee: null,
     error: null,
