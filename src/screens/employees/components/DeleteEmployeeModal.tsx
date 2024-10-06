@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Modal, Button } from 'react-bootstrap';
-import axiosInstance from "../../../api/axiosInstance.ts";
-import axios from "axios";
+import {useDispatch, useSelector} from 'react-redux';
+import { deleteEmployees } from '../../../store/employeesSlice.ts';
+import {AppDispatch, RootState} from "../../../store";
 
 interface DeleteEmployeeModalProps {
     show: boolean;
@@ -11,29 +12,16 @@ interface DeleteEmployeeModalProps {
 }
 
 const DeleteEmployeeModal: React.FC<DeleteEmployeeModalProps> = ({ show, handleClose, employeeIds, onDelete }) => {
-    const [error, setError] = useState<string>('');
+    const { error } = useSelector((state: RootState) => state.employees);
+    const dispatch = useDispatch<AppDispatch>();
 
     const handleDelete = async () => {
-        try {
-            await axiosInstance.post(`/employees/bulk-delete`, { employeeIds });
+        const resultAction = await dispatch(deleteEmployees(employeeIds));
+        if (deleteEmployees.fulfilled.match(resultAction)) {
             onDelete();
             handleClose();
-        } catch (error) {
-            if (axios.isAxiosError(error) && error.response) {
-                setError(error.response.data.error);
-                console.error('Failed to delete the Employees:', error.response.data.error);
-            } else {
-                setError('An unexpected error occurred');
-                console.error('An unexpected error occurred:', error);
-            }
         }
     };
-
-    useEffect(() => {
-        if (!show) {
-            setError('');
-        }
-    }, [show]);
 
     return (
         <Modal show={show} onHide={handleClose}>

@@ -1,14 +1,20 @@
 import React from 'react';
 import {Container, Button} from 'react-bootstrap';
 import {FaPlus, FaTrash} from 'react-icons/fa';
+import {useSelector} from "react-redux";
+import {RootState} from "../../../store";
 
 interface EmployeeListHeaderProps {
     handleAddClick: () => void;
     setShowDeleteModal: (show: boolean) => void;
-    selectedEmployeeIds: number[];
 }
 
-const EmployeeListHeader: React.FC<EmployeeListHeaderProps> = ({handleAddClick, setShowDeleteModal, selectedEmployeeIds}) => {
+const EmployeeListHeader: React.FC<EmployeeListHeaderProps> = ({handleAddClick, setShowDeleteModal}) => {
+    const {
+        selectedEmployeeIds
+    } = useSelector((state: RootState) => state.employees);
+
+    console.log(selectedEmployeeIds);
     return (
         <Container className="d-flex justify-content-between mb-3">
             <h1>Employee list</h1>

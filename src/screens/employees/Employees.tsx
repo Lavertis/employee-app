@@ -1,47 +1,44 @@
 import React, {useEffect, useState} from 'react';
 import {Alert, Container} from 'react-bootstrap';
-import {EmployeeListItem} from "../../types/employee.ts";
-import {parsePaginationHeader} from "../../utils/pagination-utils.ts";
-import axiosInstance from "../../api/axiosInstance.ts";
 import EmployeeList from "./components/EmployeeList.tsx";
 import EmployeeListHeader from "./components/EmployeeListHeader.tsx";
+import {fetchEmployees, resetEmployees, setSelectedEmployeeIds} from "../../store/employeesSlice.ts";
+import {AppDispatch, RootState} from "../../store";
+import {useDispatch, useSelector} from "react-redux";
+import DeleteEmployeeModal from "./components/DeleteEmployeeModal.tsx";
+import EmployeeFormModal from "./components/employee-form/EmployeeFormModal.tsx";
 
 
 const Employees: React.FC = () => {
-    const [isLoaded, setIsLoaded] = useState(false);
-    const [error, setError] = useState('');
-    const [employees, setEmployees] = useState<EmployeeListItem[]>([]);
-    const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showFormModal, setShowFormModal] = useState(false);
-    const [totalRecords, setTotalRecords] = useState<number | null>(null);
-
-    const fetchEmployees = (page: number, pageSize: number): Promise<EmployeeListItem[]> => {
-        return axiosInstance.get(`/employees?page=${page}&pageSize=${pageSize}`)
-            .then(response => {
-                const paginationHeader = response.headers['x-pagination'];
-                if (paginationHeader) {
-                    const paginationData = parsePaginationHeader(paginationHeader);
-                    setTotalRecords(paginationData.totalCount);
-                }
-                return response.data;
-            })
-            .catch(error => {
-                setError(error.response.data.error);
-                return [];
-            });
-    };
+    const {
+        employees,
+        error,
+        selectedEmployeeIds,
+        isLoaded
+    } = useSelector((state: RootState) => state.employees);
+    const dispatch = useDispatch<AppDispatch>();
 
     useEffect(() => {
-        fetchEmployees(1, 5).then(fetchedEmployees => {
-            setEmployees(fetchedEmployees);
-
-            setIsLoaded(true);
-        });
-    }, []);
+        resetEmployees();
+        dispatch(fetchEmployees());
+    }, [dispatch]);
 
     const handleAddClick = () => {
         setShowFormModal(true);
+    };
+
+    const handleDelete = async () => {
+        dispatch(setSelectedEmployeeIds([]));
+        dispatch(resetEmployees());
+        dispatch(fetchEmployees());
+    };
+
+    const handleSave = () => {
+        dispatch(setSelectedEmployeeIds([]));
+        dispatch(resetEmployees());
+        dispatch(fetchEmployees());
     };
 
     if (error) {
@@ -50,27 +47,26 @@ const Employees: React.FC = () => {
         );
     }
     const shouldShowNoEmployeesAlert = !employees.length && isLoaded;
-    console.log({employees, isLoaded, shouldShowNoEmployeesAlert});
     return (
         <Container>
             <EmployeeListHeader
                 handleAddClick={handleAddClick}
                 setShowDeleteModal={setShowDeleteModal}
-                selectedEmployeeIds={selectedEmployeeIds}
             />
-            {shouldShowNoEmployeesAlert ? <Alert variant="info">No employees found</Alert> : <EmployeeList
-                itemsPerPage={5}
-                totalRecords={totalRecords}
-                employees={employees}
-                setEmployees={setEmployees}
-                selectedEmployeeIds={selectedEmployeeIds}
-                setSelectedEmployeeIds={setSelectedEmployeeIds}
-                showDeleteModal={showDeleteModal}
-                setShowDeleteModal={setShowDeleteModal}
-                showFormModal={showFormModal}
-                setShowFormModal={setShowFormModal}
-                fetchEmployees={fetchEmployees}
-            />}
+            {shouldShowNoEmployeesAlert ? <Alert variant="info">No employees found</Alert> :
+                <EmployeeList setShowFormModal={setShowFormModal}/>}
+            <DeleteEmployeeModal
+                show={showDeleteModal}
+                handleClose={() => setShowDeleteModal(false)}
+                employeeIds={selectedEmployeeIds}
+                onDelete={handleDelete}
+            />
+            <EmployeeFormModal
+                show={showFormModal}
+                handleClose={() => setShowFormModal(false)}
+                employeeId={selectedEmployeeIds[0]}
+                onSave={handleSave}
+            />
         </Container>
     );
 };

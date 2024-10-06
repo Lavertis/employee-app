@@ -4,12 +4,15 @@ import {Modal, Button, Form} from 'react-bootstrap';
 import {useFormik} from 'formik';
 import axiosInstance from '../../../../api/axiosInstance.ts';
 import Select from "react-select";
-import {Sex} from "../../../../types/employee.ts";
 import {formatErrorsForFormik} from "../../../../utils/error-utils.ts";
 import {SelectOption} from "../../../../types/select.ts";
 import employeeFormValidationSchema from "./employee-form-validation-schema.ts";
 import axios from "axios";
 import {sexLabels} from "../../../../constants/enum-labels.ts";
+import {useDispatch, useSelector} from "react-redux";
+import {fetchSexes} from "../../../../store/sexSlice.ts";
+import {AppDispatch, RootState} from "../../../../store";
+
 
 interface FormValues {
     firstName: string;
@@ -32,21 +35,10 @@ interface EmployeeFormModalProps {
     onSave: () => void;
 }
 
-
 const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({show, handleClose, employeeId, onSave}) => {
-    const [sexSelectOptions, setSexSelectOptions] = useState<SelectOption[]>([]);
     const [initialFormValues, setInitialFormValues] = useState<FormValues | null>(null);
-
-    const fetchSexes = async () => {
-        try {
-            const sexes = await axiosInstance.get('/sexes');
-            setSexSelectOptions(sexes.data.map((sex: Sex) => {
-                return ({ value: sex.id, label: sexLabels[sex.name as keyof typeof sexLabels] });
-            }));
-        } catch (error) {
-            console.error('Failed to fetch sexes:', error);
-        }
-    };
+    const dispatch = useDispatch<AppDispatch>();
+    const { sexOptions } = useSelector((state: RootState) => state.sex);
 
     const fetchEmployee = async (id: number) => {
         axiosInstance.get(`/employees/${id}`)
@@ -67,7 +59,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({show, handleClose,
     }
 
     const loadForm = async () => {
-        await fetchSexes();
+        // await fetchSexes();
         if (employeeId) {
             fetchEmployee(employeeId);
         } else {
@@ -79,8 +71,9 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({show, handleClose,
     useEffect(() => {
         if (show) {
             loadForm();
+            dispatch(fetchSexes());
         }
-    }, [show]);
+    }, [show, dispatch]);
 
     useEffect(() => {
         if (initialFormValues) {
@@ -187,7 +180,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({show, handleClose,
                         <Form.Label>Sex</Form.Label>
                         <Select
                             name="sex"
-                            options={sexSelectOptions}
+                            options={sexOptions}
                             value={formik.values.sex}
                             onChange={(selectedOption) => formik.setFieldValue('sex', selectedOption)}
                             onBlur={formik.handleBlur}
