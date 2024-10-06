@@ -1,11 +1,11 @@
 import './App.css'
-import EmployeeList from "./screens/employees/components/EmployeeList.tsx";
 import {Container} from "react-bootstrap";
+import Employees from "./screens/employees/Employees.tsx";
 
 function App() {
     return (
         <Container className="mt-5">
-            <EmployeeList itemsPerPage={5}/>
+            <Employees/>
         </Container>
     )
 }
