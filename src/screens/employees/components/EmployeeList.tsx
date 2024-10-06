@@ -4,10 +4,14 @@ import EmployeeRow from "./EmployeeRow.tsx";
 import InfiniteScroll from "react-infinite-scroll-component";
 import {useDispatch, useSelector} from "react-redux";
 import {AppDispatch, RootState} from "../../../store";
-import {fetchNextEmployees, setSelectedEmployeeIds} from "../../../store/employeesSlice.ts";
+import {
+    fetchEmployee,
+    fetchNextEmployees,
+    setSelectedEmployeeIds
+} from "../../../store/employeesSlice.ts";
 
 interface EmployeeListProps {
-    setShowFormModal: React.Dispatch<React.SetStateAction<boolean>>;
+    setShowFormModal: (show: boolean) => void;
 }
 
 const EmployeeList: React.FC<EmployeeListProps> = ({ setShowFormModal }) => {
@@ -18,12 +22,12 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ setShowFormModal }) => {
     } = useSelector((state: RootState) => state.employees);
     const dispatch = useDispatch<AppDispatch>();
 
-    const handleEditClick = (employeeId: number) => {
-        dispatch(setSelectedEmployeeIds([employeeId]));
+    const handleEditClick = (employeeId: string) => {
+        dispatch(fetchEmployee(employeeId));
         setShowFormModal(true);
     };
 
-    const handleCheckboxChange = (id: number, checked: boolean) => {
+    const handleCheckboxChange = (id: string, checked: boolean) => {
         dispatch(setSelectedEmployeeIds(checked ? [...selectedEmployeeIds, id] : selectedEmployeeIds.filter(employeeId => employeeId !== id)));
         console.log(selectedEmployeeIds);
     };

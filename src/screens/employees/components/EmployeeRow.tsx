@@ -6,8 +6,8 @@ import {sexLabels} from "../../../constants/enum-labels.ts";
 
 interface EmployeeRowProps {
     employee: EmployeeListItem;
-    handleEditClick: (id: number) => void;
-    handleCheckboxChange: (id: number, checked: boolean) => void;
+    handleEditClick: (id: string) => void;
+    handleCheckboxChange: (id: string, checked: boolean) => void;
 }
 
 const EmployeeRow: React.FC<EmployeeRowProps> = ({employee, handleEditClick, handleCheckboxChange}) => {

@@ -14,7 +14,6 @@ const EmployeeListHeader: React.FC<EmployeeListHeaderProps> = ({handleAddClick, 
         selectedEmployeeIds
     } = useSelector((state: RootState) => state.employees);
 
-    console.log(selectedEmployeeIds);
     return (
         <Container className="d-flex justify-content-between mb-3">
             <h1>Employee list</h1>

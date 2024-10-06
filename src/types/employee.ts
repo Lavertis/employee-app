@@ -1,5 +1,5 @@
 export interface EmployeeListItem {
-    id: number;
+    id: string;
     firstName: string;
     lastName: string;
     age: number;
@@ -7,14 +7,21 @@ export interface EmployeeListItem {
 }
 
 export interface Sex {
-    id: number;
+    id: string;
     name: string;
 }
 
 export interface EmployeeDetails {
-    id: number;
+    id: string;
     firstName: string;
     lastName: string;
     age: number;
     sex: Sex;
+}
+
+export interface UpdateEmployeeRequest {
+    firstName?: string;
+    lastName?: string;
+    age?: number;
+    sexId?: string;
 }

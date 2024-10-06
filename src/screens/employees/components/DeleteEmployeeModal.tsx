@@ -7,17 +7,16 @@ import {AppDispatch, RootState} from "../../../store";
 interface DeleteEmployeeModalProps {
     show: boolean;
     handleClose: () => void;
-    employeeIds: number[];
     onDelete: () => void;
 }
 
-const DeleteEmployeeModal: React.FC<DeleteEmployeeModalProps> = ({ show, handleClose, employeeIds, onDelete }) => {
-    const { deleteError, deletePending } = useSelector((state: RootState) => state.employees);
+const DeleteEmployeeModal: React.FC<DeleteEmployeeModalProps> = ({ show, handleClose, onDelete }) => {
+    const { deleteError, deletePending, selectedEmployeeIds } = useSelector((state: RootState) => state.employees);
     const dispatch = useDispatch<AppDispatch>();
     const [ closeRequested, setCloseRequested ] = useState<boolean>(false);
 
     const handleDelete = async () => {
-        dispatch(deleteEmployees(employeeIds)).then(() => {
+        dispatch(deleteEmployees(selectedEmployeeIds)).then(() => {
             setCloseRequested(true);
         });
     };

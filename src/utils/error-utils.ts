@@ -1,13 +1,8 @@
-interface FormError {
-    errors: { [k: string]: string; };
-}
+import {FormError, FormikErrors} from "../types/errors.ts";
 
-interface FormikErorrs {
-    [k: string]: string;
-}
 
 export const formatErrorsForFormik = (formError: FormError) => {
-    const formikErrors: FormikErorrs = {};
+    const formikErrors: FormikErrors = {};
     for (const [fieldName, values] of Object.entries(formError.errors)) {
         const newFieldName = fieldName.replace('.Value', '');
         const fieldNameLowerCased = newFieldName.charAt(0).toLowerCase() + newFieldName.slice(1);

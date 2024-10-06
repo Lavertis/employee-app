@@ -3,9 +3,10 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosInstance from '../api/axiosInstance';
 import { Sex } from '../types/employee';
 import {sexLabels} from "../constants/enum-labels.ts";
+import {SelectOption} from "../types/select.ts";
 
 export interface SexState {
-    sexOptions: { value: number; label: string }[];
+    sexOptions: SelectOption[];
     error: string | null;
 }
 

@@ -1,22 +1,28 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect} from 'react';
 import {Alert, Container} from 'react-bootstrap';
 import EmployeeList from "./components/EmployeeList.tsx";
 import EmployeeListHeader from "./components/EmployeeListHeader.tsx";
-import {fetchEmployees, resetEmployees, setSelectedEmployeeIds} from "../../store/employeesSlice.ts";
+import {
+    clearEditEmployee,
+    fetchEmployees,
+    resetEmployees,
+    setSelectedEmployeeIds,
+    setShowDeleteModal,
+    setShowEditModal
+} from "../../store/employeesSlice.ts";
 import {AppDispatch, RootState} from "../../store";
 import {useDispatch, useSelector} from "react-redux";
 import DeleteEmployeeModal from "./components/DeleteEmployeeModal.tsx";
-// import EmployeeFormModal from "./components/employee-form/EmployeeFormModal.tsx";
+import EmployeeFormModal from "./components/employee-form/EmployeeFormModal.tsx";
 
 
 const Employees: React.FC = () => {
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [showFormModal, setShowFormModal] = useState(false);
     const {
         employees,
         error,
-        selectedEmployeeIds,
-        isLoaded
+        isLoaded,
+        showDeleteModal,
+        showEditModal
     } = useSelector((state: RootState) => state.employees);
     const dispatch = useDispatch<AppDispatch>();
 
@@ -25,8 +31,16 @@ const Employees: React.FC = () => {
         dispatch(fetchEmployees());
     }, [dispatch]);
 
+    const handleShowDeleteModal = useCallback((show: boolean) => {
+        dispatch(setShowDeleteModal(show));
+    }, [dispatch]);
+
+    const handleShowEditModal = useCallback((show: boolean) => {
+        dispatch(setShowEditModal(show));
+    }, [dispatch]);
+
     const handleAddClick = () => {
-        setShowFormModal(true);
+        dispatch(setShowEditModal(true));
     };
 
     const handleDelete = async () => {
@@ -47,26 +61,28 @@ const Employees: React.FC = () => {
         );
     }
     const shouldShowNoEmployeesAlert = !employees.length && isLoaded;
+
     return (
         <Container>
             <EmployeeListHeader
                 handleAddClick={handleAddClick}
-                setShowDeleteModal={setShowDeleteModal}
+                setShowDeleteModal={handleShowDeleteModal}
             />
             {shouldShowNoEmployeesAlert ? <Alert variant="info">No employees found</Alert> :
-                <EmployeeList setShowFormModal={setShowFormModal}/>}
+                <EmployeeList setShowFormModal={handleShowEditModal}/>}
             <DeleteEmployeeModal
                 show={showDeleteModal}
-                handleClose={() => setShowDeleteModal(false)}
-                employeeIds={selectedEmployeeIds}
+                handleClose={() => handleShowDeleteModal(false)}
                 onDelete={handleDelete}
             />
-            {/*<EmployeeFormModal*/}
-            {/*    show={showFormModal}*/}
-            {/*    handleClose={() => setShowFormModal(false)}*/}
-            {/*    employeeId={selectedEmployeeIds[0]}*/}
-            {/*    onSave={handleSave}*/}
-            {/*/>*/}
+            <EmployeeFormModal
+                show={showEditModal}
+                handleClose={() => {
+                    handleShowEditModal(false);
+                    dispatch(clearEditEmployee());
+                }}
+                onSave={handleSave}
+            />
         </Container>
     );
 };

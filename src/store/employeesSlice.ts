@@ -1,21 +1,26 @@
 // src/store/employeesSlice.ts
 import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
 import axiosInstance from '../api/axiosInstance';
-import {EmployeeDetails, EmployeeListItem} from '../types/employee';
+import {EmployeeDetails, EmployeeListItem, UpdateEmployeeRequest} from '../types/employee';
 import {parsePaginationHeader} from "../utils/pagination-utils.ts";
 import axios from "axios";
+import {FormError} from "../types/errors.ts";
 
 export interface EmployeesState {
     employees: EmployeeListItem[];
     totalRecords: number | null;
     currentPage: number;
     pageSize: number;
-    selectedEmployeeIds: number[];
-    employee: EmployeeDetails | null;
+    selectedEmployeeIds: string[];
+    editEmployee: EmployeeDetails | null;
     error: string | null;
     deleteError: string | null;
+    editError: string | null | FormError;
     isLoaded: boolean;
     deletePending: boolean;
+    editPending: boolean;
+    showDeleteModal: boolean;
+    showEditModal: boolean;
 }
 
 const initialState: EmployeesState = {
@@ -24,17 +29,20 @@ const initialState: EmployeesState = {
     currentPage: 0,
     pageSize: 5,
     selectedEmployeeIds: [],
-    employee: null,
+    editEmployee: null,
     error: null,
     deleteError: null,
+    editError: null,
     isLoaded: false,
-    deletePending: false
+    deletePending: false,
+    editPending: false,
+    showDeleteModal: false,
+    showEditModal: false,
 };
 
 export const fetchEmployees = createAsyncThunk(
     'employees/fetchEmployees',
     async (_args, { getState,  }) => {
-        console.log('fetchEmployees');
         const state = getState() as { employees: EmployeesState };
         const pageSize = state.employees.pageSize;
         const response = await axiosInstance.get<EmployeeListItem[]>(`/employees?page=1&pageSize=${pageSize}`);
@@ -45,7 +53,6 @@ export const fetchEmployees = createAsyncThunk(
 export const fetchNextEmployees = createAsyncThunk(
     'employees/fetchNextEmployees',
     async (_args, { getState }) => {
-        console.log('fetchNextEmployees');
         const state = getState() as { employees: EmployeesState };
         const currentPage = state.employees.currentPage;
         const pageSize = state.employees.pageSize;
@@ -57,7 +64,7 @@ export const fetchNextEmployees = createAsyncThunk(
 
 export const deleteEmployees = createAsyncThunk(
     'employees/deleteEmployees',
-    async (employeeIds: number[], { rejectWithValue }) => {
+    async (employeeIds: string[], { rejectWithValue }) => {
         try {
             await axiosInstance.delete(`/employees`, { data: {employeeIds} });
             return employeeIds;
@@ -73,13 +80,34 @@ export const deleteEmployees = createAsyncThunk(
 
 export const fetchEmployee = createAsyncThunk(
     'employees/fetchEmployee',
-    async (id: number, { rejectWithValue }) => {
+    async (id: string, { rejectWithValue }) => {
         try {
             const response = await axiosInstance.get<EmployeeDetails>(`/employees/${id}`);
             return response.data;
         } catch (error) {
             if (axios.isAxiosError(error) && error.response) {
                 return rejectWithValue(error.response.data.error);
+            } else {
+                return rejectWithValue('An unexpected error occurred');
+            }
+        }
+    }
+);
+
+export const updateEmployee = createAsyncThunk(
+    'employees/updateEmployee',
+    async (employee: UpdateEmployeeRequest, { rejectWithValue, getState }) => {
+        try {
+            const state = getState() as { employees: EmployeesState };
+            if(state.employees.editEmployee === null) {
+                await axiosInstance.post(`/employees`, employee);
+            } else {
+                await axiosInstance.patch(`/employees/${state.employees.editEmployee.id}`, employee);
+            }
+            return employee;
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response) {
+                return rejectWithValue(error.response.data.error ?? 'Unknown error');
             } else {
                 return rejectWithValue('An unexpected error occurred');
             }
@@ -99,11 +127,20 @@ const employeesSlice = createSlice({
             state.totalRecords = null;
             state.selectedEmployeeIds = [];
             state.currentPage = 1;
-        }
+            state.editEmployee = null;
+        },
+        setShowDeleteModal: (state, action) => {
+            state.showDeleteModal = action.payload;
+        },
+        setShowEditModal: (state, action) => {
+            state.showEditModal = action.payload;
+        },
+        clearEditEmployee: (state) => {
+            state.editEmployee = null;
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(fetchEmployees.fulfilled, (state, action) => {
-            console.log(action.payload);
             const paginationHeader = action.payload.pagination;
             if (paginationHeader) {
                 const paginationData = parsePaginationHeader(paginationHeader);
@@ -131,11 +168,10 @@ const employeesSlice = createSlice({
         builder.addCase(fetchNextEmployees.rejected, (state, action) => {
             state.error = action.error.message || 'Failed to fetch next employees';
         });
-        builder.addCase(deleteEmployees.pending, (state, _action) => {
+        builder.addCase(deleteEmployees.pending, (state) => {
             state.deletePending = true;
         });
-        builder.addCase(deleteEmployees.fulfilled, (state, action) => {
-            state.employees = state.employees.filter(employee => !action.payload.includes(employee.id));
+        builder.addCase(deleteEmployees.fulfilled, (state) => {
             state.selectedEmployeeIds = [];
             state.deletePending = false;
         });
@@ -144,45 +180,24 @@ const employeesSlice = createSlice({
             state.deletePending = false;
         });
         builder.addCase(fetchEmployee.fulfilled, (state, action) => {
-            state.employee = action.payload;
+            state.editEmployee = action.payload;
         });
         builder.addCase(fetchEmployee.rejected, (state, action) => {
             state.error = action.payload as string;
         });
+        builder.addCase(updateEmployee.pending, (state) => {
+            state.editPending = true;
+        });
+        builder.addCase(updateEmployee.fulfilled, (state) => {
+            state.editEmployee = null;
+            state.editPending = false;
+        });
+        builder.addCase(updateEmployee.rejected, (state, action) => {
+            state.editError = action.payload as string | FormError;
+            state.editPending = false;
+        });
     },
 });
 
-export const updateEmployee = createAsyncThunk(
-    'employees/updateEmployee',
-    async (employee: EmployeeDetails, { rejectWithValue }) => {
-        try {
-            await axiosInstance.put(`/employees/${employee.id}`, employee);
-            return employee;
-        } catch (error) {
-            if (axios.isAxiosError(error) && error.response) {
-                return rejectWithValue(error.response.data.error);
-            } else {
-                return rejectWithValue('An unexpected error occurred');
-            }
-        }
-    }
-);
-
-export const saveEmployee = createAsyncThunk(
-    'employees/saveEmployee',
-    async (employee: EmployeeDetails, { rejectWithValue }) => {
-        try {
-            await axiosInstance.post(`/employees`, employee);
-            return employee;
-        } catch (error) {
-            if (axios.isAxiosError(error) && error.response) {
-                return rejectWithValue(error.response.data.error);
-            } else {
-                return rejectWithValue('An unexpected error occurred');
-            }
-        }
-    }
-);
-
-export const { setSelectedEmployeeIds, resetEmployees } = employeesSlice.actions;
+export const { setSelectedEmployeeIds, resetEmployees, setShowDeleteModal, setShowEditModal, clearEditEmployee } = employeesSlice.actions;
 export default employeesSlice.reducer;
