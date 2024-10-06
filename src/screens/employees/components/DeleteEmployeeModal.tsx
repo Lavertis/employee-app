@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import {useDispatch, useSelector} from 'react-redux';
 import { deleteEmployees } from '../../../store/employeesSlice.ts';
@@ -12,16 +12,22 @@ interface DeleteEmployeeModalProps {
 }
 
 const DeleteEmployeeModal: React.FC<DeleteEmployeeModalProps> = ({ show, handleClose, employeeIds, onDelete }) => {
-    const { error } = useSelector((state: RootState) => state.employees);
+    const { deleteError, deletePending } = useSelector((state: RootState) => state.employees);
     const dispatch = useDispatch<AppDispatch>();
+    const [ closeRequested, setCloseRequested ] = useState<boolean>(false);
 
     const handleDelete = async () => {
-        const resultAction = await dispatch(deleteEmployees(employeeIds));
-        if (deleteEmployees.fulfilled.match(resultAction)) {
+        dispatch(deleteEmployees(employeeIds)).then(() => {
+            setCloseRequested(true);
+        });
+    };
+
+    useEffect(() => {
+        if(closeRequested && !deletePending && deleteError === null) {
             onDelete();
             handleClose();
         }
-    };
+    }, [closeRequested, deletePending, deleteError])
 
     return (
         <Modal show={show} onHide={handleClose}>
@@ -30,7 +36,7 @@ const DeleteEmployeeModal: React.FC<DeleteEmployeeModalProps> = ({ show, handleC
             </Modal.Header>
             <Modal.Body>
                 Are you sure you want to delete these Employees?
-                {error && <div className="text-danger">{error}</div>}
+                {deleteError && <div className="text-danger">{deleteError}</div>}
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="danger" onClick={handleDelete}>

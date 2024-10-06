@@ -6,7 +6,7 @@ import {fetchEmployees, resetEmployees, setSelectedEmployeeIds} from "../../stor
 import {AppDispatch, RootState} from "../../store";
 import {useDispatch, useSelector} from "react-redux";
 import DeleteEmployeeModal from "./components/DeleteEmployeeModal.tsx";
-import EmployeeFormModal from "./components/employee-form/EmployeeFormModal.tsx";
+// import EmployeeFormModal from "./components/employee-form/EmployeeFormModal.tsx";
 
 
 const Employees: React.FC = () => {
@@ -61,12 +61,12 @@ const Employees: React.FC = () => {
                 employeeIds={selectedEmployeeIds}
                 onDelete={handleDelete}
             />
-            <EmployeeFormModal
-                show={showFormModal}
-                handleClose={() => setShowFormModal(false)}
-                employeeId={selectedEmployeeIds[0]}
-                onSave={handleSave}
-            />
+            {/*<EmployeeFormModal*/}
+            {/*    show={showFormModal}*/}
+            {/*    handleClose={() => setShowFormModal(false)}*/}
+            {/*    employeeId={selectedEmployeeIds[0]}*/}
+            {/*    onSave={handleSave}*/}
+            {/*/>*/}
         </Container>
     );
 };

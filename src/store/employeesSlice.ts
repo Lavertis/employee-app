@@ -13,7 +13,9 @@ export interface EmployeesState {
     selectedEmployeeIds: number[];
     employee: EmployeeDetails | null;
     error: string | null;
+    deleteError: string | null;
     isLoaded: boolean;
+    deletePending: boolean;
 }
 
 const initialState: EmployeesState = {
@@ -24,7 +26,9 @@ const initialState: EmployeesState = {
     selectedEmployeeIds: [],
     employee: null,
     error: null,
+    deleteError: null,
     isLoaded: false,
+    deletePending: false
 };
 
 export const fetchEmployees = createAsyncThunk(
@@ -55,11 +59,11 @@ export const deleteEmployees = createAsyncThunk(
     'employees/deleteEmployees',
     async (employeeIds: number[], { rejectWithValue }) => {
         try {
-            await axiosInstance.post(`/employees/bulk-delete`, { employeeIds });
+            await axiosInstance.delete(`/employees`, { data: {employeeIds} });
             return employeeIds;
         } catch (error) {
             if (axios.isAxiosError(error) && error.response) {
-                return rejectWithValue(error.response.data.error);
+                return rejectWithValue(error.response.data.error ?? 'Unknown error');
             } else {
                 return rejectWithValue('An unexpected error occurred');
             }
@@ -127,12 +131,17 @@ const employeesSlice = createSlice({
         builder.addCase(fetchNextEmployees.rejected, (state, action) => {
             state.error = action.error.message || 'Failed to fetch next employees';
         });
+        builder.addCase(deleteEmployees.pending, (state, _action) => {
+            state.deletePending = true;
+        });
         builder.addCase(deleteEmployees.fulfilled, (state, action) => {
             state.employees = state.employees.filter(employee => !action.payload.includes(employee.id));
             state.selectedEmployeeIds = [];
+            state.deletePending = false;
         });
         builder.addCase(deleteEmployees.rejected, (state, action) => {
-            state.error = action.payload as string;
+            state.deleteError = action.payload as string;
+            state.deletePending = false;
         });
         builder.addCase(fetchEmployee.fulfilled, (state, action) => {
             state.employee = action.payload;
@@ -143,6 +152,37 @@ const employeesSlice = createSlice({
     },
 });
 
+export const updateEmployee = createAsyncThunk(
+    'employees/updateEmployee',
+    async (employee: EmployeeDetails, { rejectWithValue }) => {
+        try {
+            await axiosInstance.put(`/employees/${employee.id}`, employee);
+            return employee;
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response) {
+                return rejectWithValue(error.response.data.error);
+            } else {
+                return rejectWithValue('An unexpected error occurred');
+            }
+        }
+    }
+);
+
+export const saveEmployee = createAsyncThunk(
+    'employees/saveEmployee',
+    async (employee: EmployeeDetails, { rejectWithValue }) => {
+        try {
+            await axiosInstance.post(`/employees`, employee);
+            return employee;
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response) {
+                return rejectWithValue(error.response.data.error);
+            } else {
+                return rejectWithValue('An unexpected error occurred');
+            }
+        }
+    }
+);
 
 export const { setSelectedEmployeeIds, resetEmployees } = employeesSlice.actions;
 export default employeesSlice.reducer;
