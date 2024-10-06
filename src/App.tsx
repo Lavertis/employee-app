@@ -1,5 +1,5 @@
 import './App.css'
-import EmployeeList from "./screens/employee-list/EmployeeList.tsx";
+import EmployeeList from "./screens/employees/components/EmployeeList.tsx";
 import {Container} from "react-bootstrap";
 
 function App() {

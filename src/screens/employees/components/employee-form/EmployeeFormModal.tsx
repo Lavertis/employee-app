@@ -9,6 +9,7 @@ import {formatErrorsForFormik} from "../../../../utils/error-utils.ts";
 import {SelectOption} from "../../../../types/select.ts";
 import employeeFormValidationSchema from "./employee-form-validation-schema.ts";
 import axios from "axios";
+import {sexLabels} from "../../../../constants/enum-labels.ts";
 
 interface FormValues {
     firstName: string;
@@ -39,7 +40,9 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({show, handleClose,
     const fetchSexes = async () => {
         try {
             const sexes = await axiosInstance.get('/sexes');
-            setSexSelectOptions(sexes.data.map((sex: Sex) => ({value: sex.id, label: sex.name})));
+            setSexSelectOptions(sexes.data.map((sex: Sex) => {
+                return ({ value: sex.id, label: sexLabels[sex.name as keyof typeof sexLabels] });
+            }));
         } catch (error) {
             console.error('Failed to fetch sexes:', error);
         }
@@ -53,11 +56,13 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({show, handleClose,
                     firstName: employee.firstName,
                     lastName: employee.lastName,
                     age: employee.age,
-                    sex: {value: employee.sex.id, label: employee.sex.name}
+                    sex: {value: employee.sex.id, label: sexLabels[
+                        employee.sex.name as keyof typeof sexLabels
+                    ]}
                 });
             })
             .catch(error => {
-                console.error('Failed to fetch employee-list:', error);
+                console.error('Failed to fetch employees:', error);
             });
     }
 

@@ -1,59 +1,71 @@
 import React, {useEffect, useState} from 'react';
-import axiosInstance from "../../api/axiosInstance.ts";
+import axiosInstance from "../../../api/axiosInstance.ts";
 import {Alert, Button, Container, Spinner} from "react-bootstrap";
-import EmployeeRow from "./components/EmployeeRow.tsx";
-import DeleteEmployeeModal from "./components/DeleteEmployeeModal.tsx";
-import EmployeeFormModal from "./components/employee-form/EmployeeFormModal.tsx";
-import {EmployeeListItem} from "../../types/employee.ts";
-import {parsePaginationHeader} from "../../utils/pagination-utils.ts";
+import EmployeeRow from "./EmployeeRow.tsx";
+import DeleteEmployeeModal from "./DeleteEmployeeModal.tsx";
+import EmployeeFormModal from "./employee-form/EmployeeFormModal.tsx";
+import {EmployeeListItem} from "../../../types/employee.ts";
+import {parsePaginationHeader} from "../../../utils/pagination-utils.ts";
 import InfiniteScroll from "react-infinite-scroll-component";
-import {FaPlus} from "react-icons/fa";
+import {FaPlus, FaTrash} from "react-icons/fa";
 
 interface EmployeeListProps {
     itemsPerPage: number;
 }
 
-const EmployeeList: React.FC<EmployeeListProps> = ({ itemsPerPage }) => {
-    const [isLoading, setIsLoading] = useState(true);
+const EmployeeList: React.FC<EmployeeListProps> = ({itemsPerPage}) => {
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [employees, setEmployees] = useState<EmployeeListItem[]>([]);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalRecords, setTotalRecords] = useState(0);
 
-    const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
+    const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showFormModal, setShowFormModal] = useState(false);
 
-    const fetchEmployees = (page: number, pageSize: number) => {
+    const fetchEmployees = (page: number, pageSize: number): Promise<EmployeeListItem[]> => {
         setIsLoading(true);
-        axiosInstance.get(`/employees?page=${page}&pageSize=${pageSize}`)
+        return axiosInstance.get(`/employees?page=${page}&pageSize=${pageSize}`)
             .then(response => {
-                setEmployees([...employees, ...response.data]);
                 const paginationHeader = response.headers['x-pagination'];
                 if (paginationHeader) {
                     const paginationData = parsePaginationHeader(paginationHeader);
                     setTotalRecords(paginationData.totalCount);
                 }
+                return response.data;
             })
             .catch(error => {
                 setError(error.response.data.error);
+                return [];
             })
             .finally(() => setIsLoading(false));
     };
 
-    useEffect(() => {
-        setCurrentPage(1);
-        fetchEmployees(1, itemsPerPage);
-    }, []);
-
-    const handleDeleteClick = (id: number) => {
-        setSelectedEmployeeId(id);
-        setShowDeleteModal(true);
+    const fetchMoreData = async () => {
+        if (employees.length >= totalRecords) return;
+        const newEmployees = await fetchEmployees(currentPage + 1, itemsPerPage);
+        setEmployees(prevEmployees => [...prevEmployees, ...newEmployees]);
+        setCurrentPage(prevPage => prevPage + 1);
     };
 
+    const handleDelete = async () => {
+        setSelectedEmployeeIds([]);
+        setCurrentPage(1);
+        await fetchEmployees(1, itemsPerPage).then(fetchedEmployees => {
+            setEmployees(fetchedEmployees);
+        });
+    };
+
+    useEffect(() => {
+        fetchEmployees(1, itemsPerPage).then(fetchedEmployees => {
+            setEmployees(fetchedEmployees);
+        });
+    }, []);
+
     const handleEditClick = (employeeId: number) => {
-        setSelectedEmployeeId(employeeId);
+        setSelectedEmployeeIds([employeeId]);
         setShowFormModal(true);
     };
 
@@ -61,22 +73,19 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ itemsPerPage }) => {
         setShowFormModal(true);
     };
 
-    const handleDelete = () => {
-        setEmployees(employees.filter(employee => employee.id !== selectedEmployeeId));
-        setSelectedEmployeeId(null);
-    };
-
     const handleSave = () => {
-        setSelectedEmployeeId(null);
+        setSelectedEmployeeIds([]);
+        setCurrentPage(1);
+        fetchEmployees(1, itemsPerPage).then(fetchedEmployees => {
+            setEmployees(fetchedEmployees);
+        });
     };
 
-    const fetchMoreData = () => {
-        console.log('fetchMoreData');
-        if (employees.length >= totalRecords) return;
-        console.log('fetchMoreData2');
-        setCurrentPage(prevPage => prevPage + 1);
-        fetchEmployees(currentPage + 1, itemsPerPage);
-    }
+    const handleCheckboxChange = (id: number, checked: boolean) => {
+        setSelectedEmployeeIds(prevIds =>
+            checked ? [...prevIds, id] : prevIds.filter(employeeId => employeeId !== id)
+        );
+    };
 
     if (error) {
         return (
@@ -98,13 +107,17 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ itemsPerPage }) => {
                     <Button variant="primary" onClick={handleAddClick} className="d-flex align-items-center">
                         <FaPlus className="me-1"/><span className="text-nowrap">Add Employee</span>
                     </Button>
+                    <Button variant="danger" onClick={() => setShowDeleteModal(true)}
+                            className="d-flex align-items-center ms-2" disabled={!selectedEmployeeIds.length}>
+                        <FaTrash className="me-1"/><span className="text-nowrap">Delete Selected</span>
+                    </Button>
                 </div>
             </Container>
             <InfiniteScroll
                 dataLength={employees.length}
                 next={fetchMoreData}
-                hasMore={true}
-                loader={<Spinner animation="border" role="status" />}
+                hasMore={employees.length < totalRecords}
+                loader={<Spinner animation="border" role="status"/>}
                 height={'calc(100vh - 300px)'}
                 endMessage={<Alert variant="info">No more employees</Alert>}
             >
@@ -113,20 +126,20 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ itemsPerPage }) => {
                         key={employee.id}
                         employee={employee}
                         handleEditClick={handleEditClick}
-                        handleDeleteClick={handleDeleteClick}
+                        handleCheckboxChange={handleCheckboxChange}
                     />
                 ))}
             </InfiniteScroll>
             <DeleteEmployeeModal
                 show={showDeleteModal}
                 handleClose={() => setShowDeleteModal(false)}
-                employeeId={selectedEmployeeId}
+                employeeIds={selectedEmployeeIds}
                 onDelete={handleDelete}
             />
             <EmployeeFormModal
                 show={showFormModal}
                 handleClose={() => setShowFormModal(false)}
-                employeeId={selectedEmployeeId}
+                employeeId={selectedEmployeeIds[0]}
                 onSave={handleSave}
             />
         </Container>
